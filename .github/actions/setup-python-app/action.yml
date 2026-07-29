@@ -1,0 +1,29 @@
+# A composite action = a bundle of STEPS that other jobs can reuse.
+# It has no `on:` trigger and cannot run by itself. Something must call it.
+
+name: Setup Python app
+description: Install Python and the backend dependencies, with pip caching.
+
+inputs:
+  python-version:
+    description: Which Python version to install
+    required: false
+    default: "3.12"
+
+runs:
+  # `composite` is what makes this an action instead of a workflow.
+  using: composite
+
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+        cache-dependency-path: backend/requirements.txt
+
+    - name: Install dependencies
+      # GOTCHA: every `run:` step inside a composite MUST declare `shell:`.
+      # In a normal workflow it is optional. Forgetting it is the number one
+      # error people hit when writing their first composite.
+      shell: bash
+      run: pip install -r backend/requirements.txt
