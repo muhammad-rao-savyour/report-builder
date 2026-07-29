@@ -17,3 +17,11 @@ sh:      ## shell inside the api container
 
 reset:   ## wipe the database and storage
 	docker compose down -v
+
+itest:   ## run integration tests against the real running system
+	docker compose up -d --build
+	docker compose run --rm -e S3_PUBLIC_ENDPOINT=http://minio:9000 \
+		api python -m pytest tests_integration
+
+lint:    ## check style and common mistakes
+	docker compose run --rm --no-deps api ruff check .

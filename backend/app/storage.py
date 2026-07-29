@@ -11,6 +11,7 @@ same, so this problem disappears.
 """
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from .config import settings
 
@@ -51,3 +52,18 @@ def open_stream(key: str):
     the file is.
     """
     return internal.get_object(Bucket=settings.s3_bucket, Key=key)["Body"]
+
+
+def object_exists(key: str) -> bool:
+    """Is the file actually in storage?
+
+    head_object asks for the metadata only, not the bytes, so this is cheap
+    even for a 2 GB file.
+    """
+    try:
+        internal.head_object(Bucket=settings.s3_bucket, Key=key)
+        return True
+    except ClientError as err:
+        if err.response["Error"]["Code"] in ("404", "NoSuchKey", "NotFound"):
+            return False
+        raise

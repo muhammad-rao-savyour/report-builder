@@ -26,3 +26,17 @@ def test_delete_item(client):
 
 def test_missing_item_is_404(client):
     assert client.get("/items/does-not-exist").status_code == 404
+
+
+def test_complete_rejects_missing_file(client, monkeypatch):
+    """If the browser never actually uploaded, say so immediately."""
+    import app.main as main
+
+    monkeypatch.setattr(main, "presigned_put_url", lambda key, **kw: "http://fake/url")
+    monkeypatch.setattr(main, "object_exists", lambda key: False)
+
+    upload_id = client.post("/uploads", json={"filename": "ghost.csv"}).json()["upload_id"]
+    resp = client.post(f"/uploads/{upload_id}/complete")
+
+    assert resp.status_code == 409
+    assert client.get(f"/uploads/{upload_id}").json()["status"] == "failed"

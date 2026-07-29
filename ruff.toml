@@ -1,0 +1,14 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+# E = style errors, F = real bugs, I = import order,
+# UP = outdated syntax, B = likely mistakes
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.flake8-bugbear]
+# FastAPI's Depends() in an argument default is correct and intentional.
+# Without this, rule B008 flags every single route. Telling the linter about
+# your framework is normal -- a linter you have to ignore is a linter nobody
+# reads.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]

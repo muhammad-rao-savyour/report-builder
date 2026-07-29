@@ -16,8 +16,9 @@ from .config import settings
 from .db import Base, engine, get_db
 from .models import Item, Upload
 from .schemas import ItemIn, ItemOut, UploadOut, UploadStartIn, UploadStartOut
-from .storage import presigned_put_url
+from .storage import object_exists, presigned_put_url
 from .tasks import process_csv
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -96,7 +97,18 @@ def complete_upload(upload_id: str, db: Session = Depends(get_db)):
     upload = db.get(Upload, upload_id)
     if upload is None:
         raise HTTPException(404, "not found")
+
+    # Check at the door. Without this, a missing file becomes a background
+    # worker failing three times over 90 seconds with a confusing error, and
+    # the user is told nothing. Validate early, fail loudly, fail here.
+    if not object_exists(upload.s3_key):
+        upload.status = "failed"
+        upload.error = "file was never uploaded to storage"
+        db.commit()
+        raise HTTPException(409, "file not found in storage - PUT it to upload_url first")
+
     upload.status = "queued"
+    upload.error = ""
     db.commit()
     process_csv.delay(upload.id)
     return upload

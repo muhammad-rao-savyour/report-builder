@@ -9,10 +9,10 @@ import codecs
 import csv
 
 from .celery_app import celery_app
+from .config import settings
 from .db import SessionLocal
 from .models import Upload
 from .storage import open_stream
-from .config import settings
 
 
 @celery_app.task(name="process_csv", bind=True, max_retries=3, default_retry_delay=30)
@@ -57,6 +57,6 @@ def process_csv(self, upload_id: str) -> None:
             row.status = "failed"
             row.error = str(exc)[:500]
             db.commit()
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
     finally:
         db.close()

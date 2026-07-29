@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.t
 
 COPY app ./app
 COPY tests ./tests
+COPY tests_integration ./tests_integration
 COPY pytest.ini .
 
 # Never run as root.
